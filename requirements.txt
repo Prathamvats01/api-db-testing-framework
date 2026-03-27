@@ -1,0 +1,31 @@
+# ── Core ──────────────────────────────────────────────────────────
+requests==2.31.0
+pytest==8.1.1
+pytest-html==4.1.1
+pytest-xdist==3.5.0        # parallel test execution
+pytest-ordering==0.6        # test ordering
+pytest-rerunfailures==14.0  # auto-retry on flaky tests
+
+# ── Assertions & Schema ───────────────────────────────────────────
+jsonschema==4.22.0
+assertpy==1.1
+
+# ── Database ──────────────────────────────────────────────────────
+sqlalchemy==2.0.29
+psycopg2-binary==2.9.9
+pymysql==1.1.0
+
+# ── Reporting ─────────────────────────────────────────────────────
+allure-pytest==2.13.5
+colorlog==6.8.2
+
+# ── Data & Config ─────────────────────────────────────────────────
+python-dotenv==1.0.1
+pyyaml==6.0.1
+pandas==2.2.2
+Faker==24.3.0
+
+# ── Code Quality ──────────────────────────────────────────────────
+ruff==0.4.1
+black==24.3.0
+mypy==1.9.0

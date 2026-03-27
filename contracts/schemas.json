@@ -1,0 +1,71 @@
+{
+  "user_schema": {
+    "type": "object",
+    "required": ["id", "name", "username", "email"],
+    "properties": {
+      "id":       { "type": "integer", "minimum": 1 },
+      "name":     { "type": "string",  "minLength": 1 },
+      "username": { "type": "string",  "minLength": 1 },
+      "email":    { "type": "string",  "format": "email" },
+      "phone":    { "type": "string" },
+      "website":  { "type": "string" },
+      "address": {
+        "type": "object",
+        "properties": {
+          "street":  { "type": "string" },
+          "city":    { "type": "string" },
+          "zipcode": { "type": "string" }
+        }
+      }
+    },
+    "additionalProperties": true
+  },
+
+  "post_schema": {
+    "type": "object",
+    "required": ["id", "userId", "title", "body"],
+    "properties": {
+      "id":     { "type": "integer", "minimum": 1 },
+      "userId": { "type": "integer", "minimum": 1 },
+      "title":  { "type": "string",  "minLength": 1 },
+      "body":   { "type": "string",  "minLength": 1 }
+    },
+    "additionalProperties": false
+  },
+
+  "comment_schema": {
+    "type": "object",
+    "required": ["id", "postId", "name", "email", "body"],
+    "properties": {
+      "id":     { "type": "integer", "minimum": 1 },
+      "postId": { "type": "integer", "minimum": 1 },
+      "name":   { "type": "string",  "minLength": 1 },
+      "email":  { "type": "string",  "format": "email" },
+      "body":   { "type": "string",  "minLength": 1 }
+    },
+    "additionalProperties": false
+  },
+
+  "todo_schema": {
+    "type": "object",
+    "required": ["id", "userId", "title", "completed"],
+    "properties": {
+      "id":        { "type": "integer", "minimum": 1 },
+      "userId":    { "type": "integer", "minimum": 1 },
+      "title":     { "type": "string",  "minLength": 1 },
+      "completed": { "type": "boolean" }
+    },
+    "additionalProperties": false
+  },
+
+  "created_post_schema": {
+    "type": "object",
+    "required": ["id", "userId", "title", "body"],
+    "properties": {
+      "id":     { "type": "integer" },
+      "userId": { "type": "integer" },
+      "title":  { "type": "string"  },
+      "body":   { "type": "string"  }
+    }
+  }
+}

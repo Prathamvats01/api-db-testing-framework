@@ -1,0 +1,180 @@
+name: API + DB Testing Framework — CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    - cron: '0 2 * * *'       # Nightly at 02:00 UTC
+  workflow_dispatch:
+    inputs:
+      test_scope:
+        description: 'Tests to run'
+        required: true
+        default: 'smoke'
+        type: choice
+        options: [ smoke, regression, db, integration, all ]
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  # ── Code quality ──────────────────────────────────────────────────
+  lint:
+    name: Lint (Ruff + Black + MyPy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '${{ env.PYTHON_VERSION }}', cache: pip }
+      - run: pip install ruff black mypy --quiet
+      - run: ruff check src/ config/ conftest.py
+      - run: black --check src/ config/ conftest.py
+      - run: mypy src/ config/ --ignore-missing-imports
+
+  # ── API tests (no Docker needed — targets live JSONPlaceholder) ──
+  api-tests:
+    name: API Tests (JSONPlaceholder)
+    runs-on: ubuntu-latest
+    needs: lint
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt --quiet
+
+      - name: Run API smoke tests
+        run: |
+          pytest src/tests/api/ \
+            -m "smoke" \
+            -v --tb=short \
+            --alluredir=reports/allure-results \
+            --html=reports/api-smoke-report.html \
+            --self-contained-html
+        continue-on-error: true
+
+      - name: Run API regression tests
+        if: github.event.inputs.test_scope == 'regression' || github.event.inputs.test_scope == 'all' || github.event_name == 'schedule'
+        run: |
+          pytest src/tests/api/ \
+            -m "regression" \
+            -v --tb=short \
+            --alluredir=reports/allure-results \
+            --html=reports/api-regression-report.html \
+            --self-contained-html
+        continue-on-error: true
+
+      - name: Upload API test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-test-reports
+          path: reports/
+          retention-days: 30
+
+  # ── DB + Integration tests (PostgreSQL via Docker service) ───────
+  db-integration-tests:
+    name: DB + Integration Tests (Docker PostgreSQL)
+    runs-on: ubuntu-latest
+    needs: lint
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB:       testdb
+          POSTGRES_USER:     testuser
+          POSTGRES_PASSWORD: testpassword
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt --quiet
+
+      - name: Seed database
+        run: psql postgresql://testuser:testpassword@localhost:5432/testdb -f docker/init.sql
+
+      - name: Run DB quality checks
+        run: |
+          pytest src/tests/db/ \
+            -m "db" \
+            -v --tb=short \
+            --alluredir=reports/allure-results \
+            --html=reports/db-report.html \
+            --self-contained-html
+        env:
+          DB_HOST:     localhost
+          DB_PORT:     5432
+          DB_NAME:     testdb
+          DB_USER:     testuser
+          DB_PASSWORD: testpassword
+        continue-on-error: true
+
+      - name: Run integration tests
+        run: |
+          pytest src/tests/integration/ \
+            -m "integration" \
+            -v --tb=short \
+            --alluredir=reports/allure-results \
+            --html=reports/integration-report.html \
+            --self-contained-html
+        env:
+          DB_HOST:     localhost
+          DB_PORT:     5432
+          DB_NAME:     testdb
+          DB_USER:     testuser
+          DB_PASSWORD: testpassword
+        continue-on-error: true
+
+      - name: Upload DB test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-integration-reports
+          path: reports/
+          retention-days: 30
+
+  # ── Publish Allure report ─────────────────────────────────────────
+  publish-allure:
+    name: Publish Allure to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: [ api-tests, db-integration-tests ]
+    if: always() && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: '*-reports'
+          path: allure-results
+          merge-multiple: true
+      - uses: simple-elf/allure-report-action@master
+        with:
+          allure_results: allure-results
+          keep_reports: 20
+      - uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: allure-history

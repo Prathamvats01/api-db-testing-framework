@@ -1,0 +1,57 @@
+# Build outputs
+target/
+*.class
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Coverage
+.coverage
+htmlcov/
+
+# Logs
+*.log
+logs/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Reports & artefacts (generated — not committed)
+reports/
+allure-results/
+allure-report/
+target/allure-results/
+target/extent-reports/
+target/cucumber-reports/
+target/screenshots/
+target/screen-recordings/
+target/logs/
+
+# Secrets
+.env
+*.env
+cloud.properties
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node (Appium server)
+node_modules/
+package-lock.json
+
+# Databases
+*.db
+*.sqlite3

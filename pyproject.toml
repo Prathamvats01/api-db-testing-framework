@@ -1,0 +1,55 @@
+[build-system]
+requires      = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name        = "api-db-testing-framework"
+version     = "2.0.0"
+description = "Production-grade API + Database testing framework — JSONPlaceholder + PostgreSQL + Docker"
+requires-python = ">=3.11"
+
+# ── Pytest ────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths    = ["src/tests", "conftest.py"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+addopts = """
+  -v
+  --tb=short
+  --strict-markers
+  --html=reports/pytest-report.html
+  --self-contained-html
+  --alluredir=reports/allure-results
+"""
+
+markers = [
+  "smoke:       Critical path — runs on every push",
+  "regression:  Full regression suite",
+  "db:          Tests requiring PostgreSQL (docker-compose up -d first)",
+  "integration: Cross-layer API + DB tests",
+  "negative:    Negative / error path tests",
+  "performance: Response time SLA assertions",
+]
+
+# ── Ruff ──────────────────────────────────────────────────────────
+[tool.ruff]
+line-length    = 100
+target-version = "py311"
+select         = ["E", "F", "W", "I", "N", "UP", "B"]
+ignore         = ["E501"]
+
+[tool.ruff.per-file-ignores]
+"src/tests/*" = ["S101"]     # allow assert in tests
+"conftest.py" = ["S101"]
+
+# ── Black ─────────────────────────────────────────────────────────
+[tool.black]
+line-length    = 100
+target-version = ["py311"]
+
+# ── MyPy ──────────────────────────────────────────────────────────
+[tool.mypy]
+python_version         = "3.11"
+ignore_missing_imports = true
